@@ -1,7 +1,7 @@
 import { createClient } from 'https://jspm.dev/@supabase/supabase-js'
 
 const supabaseUrl = 'https://iwxfgyagoksrurwcdstr.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3eGZneWFnb2tzcnVyd2Nkc3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTU5NTgsImV4cCI6MjA5MjUzMTk1OH0.KQPsiw4LPMEj6kYs-OArNRqoCfGdsCZNGXv4OF2FC1Q'
+const supabaseKey = 'SUA_KEY_AQUI'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const form = document.getElementById('formPaciente')
@@ -9,33 +9,54 @@ const listaDiv = document.getElementById('listaPacientes')
 const btnSalvar = document.getElementById('btnSalvar')
 const btnCancelar = document.getElementById('btnCancelar')
 
-// Carregar lista
+// 🔹 Carregar pacientes
 async function carregarPacientes() {
     listaDiv.innerHTML = 'Carregando...'
-    const { data, error } = await supabase.from('pacientes').select('*').order('id', { ascending: false })
-    if (error) return listaDiv.innerHTML = 'Erro ao carregar.'
-    
+
+    const { data, error } = await supabase
+        .from('pacientes')
+        .select('*')
+        .order('id', { ascending: false })
+
+    if (error) {
+        listaDiv.innerHTML = 'Erro ao carregar.'
+        console.log(error)
+        return
+    }
+
     listaDiv.innerHTML = ''
+
     data.forEach(p => {
         const div = document.createElement('div')
+        div.className = 'paciente-card'
+
         div.innerHTML = `
-            <p><strong>${p.nome}</strong> - ${p.celular}</p>
-            <button onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.celular}', '${p.email}')">Editar</button>
-            <button onclick="deletarPaciente(${p.id})" style="color:red">Deletar</button>
+            <div>
+                <strong>${p.nome}</strong>
+                <p>📞 ${p.celular}</p>
+            </div>
+
+            <div style="margin-top:10px;">
+                <button onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.celular}')">Editar</button>
+                <button onclick="deletarPaciente(${p.id})" style="color:red; margin-left:10px;">Deletar</button>
+            </div>
+
             <hr>
         `
+
         listaDiv.appendChild(div)
     })
 }
 
-// Salvar (Novo ou Editar)
+// 🔹 Salvar (novo ou editar)
 form.addEventListener('submit', async (e) => {
     e.preventDefault()
+
     const id = document.getElementById('pacienteId').value
+
     const dados = {
         nome: document.getElementById('nome').value,
-        celular: document.getElementById('celular').value,
-        email: document.getElementById('email').value
+        celular: document.getElementById('celular').value
     }
 
     if (id) {
@@ -48,10 +69,11 @@ form.addEventListener('submit', async (e) => {
     document.getElementById('pacienteId').value = ''
     btnSalvar.innerText = 'Cadastrar'
     btnCancelar.style.display = 'none'
+
     carregarPacientes()
 })
 
-// Funções globais para os botões funcionarem
+// 🔹 Deletar
 window.deletarPaciente = async (id) => {
     if (confirm('Excluir?')) {
         await supabase.from('pacientes').delete().eq('id', id)
@@ -59,15 +81,16 @@ window.deletarPaciente = async (id) => {
     }
 }
 
-window.prepararEdicao = (id, nome, celular, email) => {
+// 🔹 Editar
+window.prepararEdicao = (id, nome, celular) => {
     document.getElementById('pacienteId').value = id
     document.getElementById('nome').value = nome
     document.getElementById('celular').value = celular
-    document.getElementById('email').value = email
     btnSalvar.innerText = 'Salvar Alterações'
     btnCancelar.style.display = 'inline'
 }
 
+// 🔹 Cancelar edição
 btnCancelar.onclick = () => {
     form.reset()
     document.getElementById('pacienteId').value = ''
@@ -75,4 +98,5 @@ btnCancelar.onclick = () => {
     btnCancelar.style.display = 'none'
 }
 
+// 🔹 Inicializar
 carregarPacientes()
