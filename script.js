@@ -1,7 +1,9 @@
 import { createClient } from 'https://jspm.dev/@supabase/supabase-js'
 
 const supabaseUrl = 'https://iwxfgyagoksrurwcdstr.supabase.co'
-const supabaseKey = 'SUA_KEY_AQUI'
+
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3eGZneWFnb2tzcnVyd2Nkc3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTU5NTgsImV4cCI6MjA5MjUzMTk1OH0.KQPsiw4LPMEj6kYs-OArNRqoCfGdsCZNGXv4OF2FC1Q'
+
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const form = document.getElementById('formPaciente')
@@ -19,8 +21,13 @@ async function carregarPacientes() {
         .order('id', { ascending: false })
 
     if (error) {
+        console.error("ERRO AO BUSCAR:", error)
         listaDiv.innerHTML = 'Erro ao carregar.'
-        console.log(error)
+        return
+    }
+
+    if (!data || data.length === 0) {
+        listaDiv.innerHTML = 'Nenhum paciente cadastrado.'
         return
     }
 
@@ -40,7 +47,6 @@ async function carregarPacientes() {
                 <button onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.celular}')">Editar</button>
                 <button onclick="deletarPaciente(${p.id})" style="color:red; margin-left:10px;">Deletar</button>
             </div>
-
             <hr>
         `
 
@@ -59,10 +65,20 @@ form.addEventListener('submit', async (e) => {
         celular: document.getElementById('celular').value
     }
 
+    let error
+
     if (id) {
-        await supabase.from('pacientes').update(dados).eq('id', id)
+        const res = await supabase.from('pacientes').update(dados).eq('id', id)
+        error = res.error
     } else {
-        await supabase.from('pacientes').insert([dados])
+        const res = await supabase.from('pacientes').insert([dados])
+        error = res.error
+    }
+
+    if (error) {
+        console.error("ERRO AO SALVAR:", error)
+        alert("Erro ao salvar!")
+        return
     }
 
     form.reset()
@@ -76,7 +92,14 @@ form.addEventListener('submit', async (e) => {
 // 🔹 Deletar
 window.deletarPaciente = async (id) => {
     if (confirm('Excluir?')) {
-        await supabase.from('pacientes').delete().eq('id', id)
+        const { error } = await supabase.from('pacientes').delete().eq('id', id)
+
+        if (error) {
+            console.error("ERRO AO DELETAR:", error)
+            alert("Erro ao deletar!")
+            return
+        }
+
         carregarPacientes()
     }
 }
@@ -90,7 +113,7 @@ window.prepararEdicao = (id, nome, celular) => {
     btnCancelar.style.display = 'inline'
 }
 
-// 🔹 Cancelar edição
+// 🔹 Cancelar
 btnCancelar.onclick = () => {
     form.reset()
     document.getElementById('pacienteId').value = ''
